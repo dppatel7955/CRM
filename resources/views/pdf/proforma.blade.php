@@ -83,7 +83,7 @@
         <div class="invoice-info">
             <h2>PROFORMA INVOICE</h2>
             <p><strong>Date:</strong> {{ $proforma->created_at->format('Y-m-d') }}</p>
-            <p><strong>PI #:</strong> PI-{{ $proforma->id }}</p>
+            <p><strong>PI #:</strong> {{ $proforma->custom_proforma_id ?? 'PI-'.$proforma->id }}</p>
             <p><strong>PO Number:</strong> {{ $proforma->po_number ?? 'N/A' }}</p>
             <p><strong>PO Date:</strong> {{ $proforma->po_date ? $proforma->po_date->format('Y-m-d') : 'N/A' }}</p>
         </div>
@@ -151,15 +151,18 @@
         @endif
     
         @php
-            $percentage = $proforma->invoice_percentage;
-            $payable = ($finalTotal * $percentage) / 100;
+            $percentageString = $proforma->invoice_percentage;
+            $numericPercentage = floatval($percentageString);
+            $payable = ($finalTotal * $numericPercentage) / 100;
         @endphp
 
-    <p><strong>Total: ${{ number_format($finalTotal, 2) }}</strong></p>
+        <p><strong>Total: ${{ number_format($finalTotal, 2) }}</strong></p>
     
-        @if($percentage < 100)
-                <p>Invoice Percentage: {{ $percentage }}%</p>
+        @if($numericPercentage > 0 && $numericPercentage < 100)
+            <p>Invoice Percentage: {{ $percentageString }}</p>
             <p style="font-size: 1.2em;"><strong>Payable Amount: ${{ number_format($payable, 2) }}</strong></p>
+        @elseif($percentageString !== '100' && $percentageString !== '100%' && $numericPercentage == 0)
+             <p>Payment Terms: {{ $percentageString }}</p>
         @endif
   </di  v>
 

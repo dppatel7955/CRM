@@ -18,6 +18,15 @@ class PdfController extends Controller
         return $pdf->download("Quotation-{$quotation->id}.pdf");
     }
 
+    public function streamQuotation(Quotation $quotation)
+    {
+        $quotation->load('products');
+
+        $pdf = Pdf::loadView('pdf.quotation', compact('quotation'));
+
+        return $pdf->stream("Quotation-{$quotation->id}.pdf");
+    }
+
     public function downloadProforma(ProformaInvoice $proforma)
     {
         $proforma->load('products');
@@ -25,5 +34,14 @@ class PdfController extends Controller
         $pdf = Pdf::loadView('pdf.proforma', compact('proforma'));
 
         return $pdf->download("Proforma-{$proforma->id}.pdf");
+    }
+
+    public function streamProforma(ProformaInvoice $proforma)
+    {
+        $proforma->load('products');
+
+        $pdf = Pdf::loadView('pdf.proforma', compact('proforma'));
+
+        return $pdf->stream("Proforma-{$proforma->id}.pdf");
     }
 }

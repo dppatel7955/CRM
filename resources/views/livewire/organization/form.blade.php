@@ -4,9 +4,9 @@ use App\Models\Organization;
 use Livewire\Volt\Component;
 use Livewire\Attributes\Layout;
 
-new 
-#[Layout('layouts.app')]
-class extends Component {
+new
+    #[Layout('layouts.app')]
+    class extends Component {
     public ?Organization $organization = null;
 
     public string $organization_name = '';
@@ -17,9 +17,17 @@ class extends Component {
     public string $gst_number = '';
     public bool $is_dealer = false;
     public bool $active = true;
+    public string $returnUrl = '';
 
     public function mount(?Organization $organization = null): void
     {
+        $this->returnUrl = request()->query('return_to', route('organizations.index'));
+
+        // Safety check: specific fix for Livewire update URLs getting caught in return_to
+        if (str_contains($this->returnUrl, 'livewire/update')) {
+            $this->returnUrl = route('dashboard');
+        }
+
         if ($organization && $organization->exists) {
             $this->organization = $organization;
             $this->organization_name = $organization->organization_name;
@@ -54,7 +62,7 @@ class extends Component {
             session()->flash('message', 'Organization created successfully.');
         }
 
-        $this->redirect(route('organizations.index'));
+        $this->redirect($this->returnUrl);
     }
 }; ?>
 
@@ -66,9 +74,9 @@ class extends Component {
                     <h2 class="text-xl font-semibold">
                         {{ $organization ? 'Edit Organization' : 'Create Organization' }}
                     </h2>
-                    <a href="{{ route('organizations.index') }}"
+                    <a href="{{ $returnUrl }}"
                         class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">
-                        &larr; Back to List
+                        &larr; Back
                     </a>
                 </div>
 

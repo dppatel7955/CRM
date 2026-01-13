@@ -39,4 +39,14 @@ class Enquiry extends Model
     {
         return $this->belongsTo(User::class, 'assigned_to');
     }
+
+    public function quotations()
+    {
+        return $this->hasMany(Quotation::class);
+    }
+
+    public function proformaInvoices()
+    {
+        return $this->hasMany(ProformaInvoice::class);
+    }
 }

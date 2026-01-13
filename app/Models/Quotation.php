@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class Quotation extends Model
 {
     protected $fillable = [
+        'quotation_no',
+        'revision_no',
+        'custom_quotation_id',
         'enquiry_id',
         'organization_snapshot',
         'terms_and_conditions',
@@ -27,5 +30,10 @@ class Quotation extends Model
     public function products()
     {
         return $this->hasMany(QuotationProduct::class);
+    }
+
+    public function proformaInvoices()
+    {
+        return $this->hasMany(ProformaInvoice::class);
     }
 }

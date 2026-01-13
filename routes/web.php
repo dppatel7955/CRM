@@ -40,8 +40,16 @@ Route::get('/quotations/{quotation}/download', [App\Http\Controllers\PdfControll
     ->name('quotations.download')
     ->middleware(['auth']);
 
+Route::get('/quotations/{quotation}/view', [App\Http\Controllers\PdfController::class, 'streamQuotation'])
+    ->name('quotations.view_pdf')
+    ->middleware(['auth']);
+
 Route::get('/proformas/{proforma}/download', [App\Http\Controllers\PdfController::class, 'downloadProforma'])
     ->name('proformas.download')
+    ->middleware(['auth']);
+
+Route::get('/proformas/{proforma}/view', [App\Http\Controllers\PdfController::class, 'streamProforma'])
+    ->name('proformas.view_pdf')
     ->middleware(['auth']);
 
 Livewire\Volt\Volt::route('dropdowns', 'dropdown.index')->name('dropdowns.index')->middleware(['auth']);

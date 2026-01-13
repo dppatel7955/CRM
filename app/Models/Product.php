@@ -18,10 +18,14 @@ class Product extends Model
         'description',
         'attributes',
         'active',
+        'key_features',
+        'application',
+        'images',
     ];
 
     protected $casts = [
         'attributes' => 'array',
+        'images' => 'array',
         'active' => 'boolean',
         'price' => 'decimal:2',
         'dealer_price' => 'decimal:2',

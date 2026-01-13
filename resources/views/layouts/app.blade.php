@@ -14,6 +14,24 @@
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script>
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            // User requested dark, or system is dark
+            // But per request "light one should be default" implies overriding system preference if not explicitly set?
+            // "light one should be default" -> usually means if no preference, use light.
+            // So let's stick to standard behavior BUT default to light if nothing in local storage.
+            // Actually, "light one should be default" means if I visit for the first time, it's light.
+            // So:
+            if (localStorage.getItem('color-theme') === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        } else {
+            // Default to light
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
 </head>
 
 <body class="font-sans antialiased">

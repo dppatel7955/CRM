@@ -3,10 +3,13 @@
 use App\Models\Product;
 use Livewire\Volt\Component;
 use Livewire\Attributes\Layout;
+use Livewire\WithFileUploads;
 
-new 
-#[Layout('layouts.app')]
-class extends Component {
+new
+    #[Layout('layouts.app')]
+    class extends Component {
+    use WithFileUploads;
+
     public ?Product $product = null;
 
     public string $product_name = '';
@@ -18,7 +21,13 @@ class extends Component {
     public $max_discount = '';
     public string $short_description = '';
     public string $description = '';
+    public string $key_features = '';
+    public string $application = '';
     public bool $active = true;
+
+    // Images
+    public $existingImages = []; // Paths of existing images
+    public $newImages = []; // Temporary uploaded files (max 3 total combined)
 
     // JSON Attributes
     public array $attributes_list = [['key' => '', 'value' => '']];
@@ -36,7 +45,11 @@ class extends Component {
             $this->max_discount = $product->max_discount;
             $this->short_description = $product->short_description ?? '';
             $this->description = $product->description ?? '';
+            $this->key_features = $product->key_features ?? '';
+            $this->application = $product->application ?? '';
             $this->active = $product->active;
+
+            $this->existingImages = $product->images ?? [];
 
             if (!empty($product->attributes)) {
                 $this->attributes_list = [];
@@ -61,6 +74,18 @@ class extends Component {
         $this->attributes_list = array_values($this->attributes_list);
     }
 
+    public function removeExistingImage($index)
+    {
+        unset($this->existingImages[$index]);
+        $this->existingImages = array_values($this->existingImages);
+    }
+
+    public function removeNewImage($index)
+    {
+        unset($this->newImages[$index]);
+        $this->newImages = array_values($this->newImages);
+    }
+
     public function save(): void
     {
         $validated = $this->validate([
@@ -73,7 +98,10 @@ class extends Component {
             'max_discount' => 'nullable|numeric|min:0',
             'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
+            'key_features' => 'nullable|string',
+            'application' => 'nullable|string',
             'active' => 'boolean',
+            'newImages.*' => 'nullable|image|max:2048', // 2MB Max
             'attributes_list.*.key' => 'nullable|string',
             'attributes_list.*.value' => 'nullable|string',
         ]);
@@ -86,6 +114,21 @@ class extends Component {
             }
         }
 
+        // Handle Images
+        $finalImages = $this->existingImages;
+
+        // Store new images
+        foreach ($this->newImages as $image) {
+            // Basic limit check (optimistic based on UI)
+            if (count($finalImages) < 3) {
+                $path = $image->store('products', 'public');
+                $finalImages[] = $path;
+            }
+        }
+
+        // Ensure max 3 (backend clamp)
+        $finalImages = array_slice($finalImages, 0, 3);
+
         $data = [
             'product_name' => $this->product_name,
             'model_name' => $this->model_name,
@@ -96,7 +139,10 @@ class extends Component {
             'max_discount' => $this->max_discount !== '' ? $this->max_discount : null,
             'short_description' => $this->short_description,
             'description' => $this->description,
+            'key_features' => $this->key_features,
+            'application' => $this->application,
             'active' => $this->active,
+            'images' => $finalImages,
             'attributes' => $attributes,
         ];
 
@@ -135,6 +181,69 @@ class extends Component {
                             <input wire:model="product_name" type="text" required
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                             @error('product_name') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Image Upload Section -->
+                        <div class="md:col-span-2 border-t pt-6 dark:border-gray-700">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Product
+                                Images (Max 3)</label>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <!-- Display Existing Images -->
+                                @foreach($existingImages as $index => $path)
+                                    <div class="relative group">
+                                        <img src="{{ Storage::url($path) }}"
+                                            class="h-32 w-full object-cover rounded-md border border-gray-300 dark:border-gray-600">
+                                        <button type="button" wire:click="removeExistingImage({{ $index }})"
+                                            class="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-75 hover:opacity-100 transition">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20"
+                                                fill="currentColor">
+                                                <path fill-rule="evenodd"
+                                                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                                    clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                @endforeach
+
+                                <!-- Display New Images Preview -->
+                                @foreach($newImages as $index => $image)
+                                    <div class="relative group">
+                                        <img src="{{ $image->temporaryUrl() }}"
+                                            class="h-32 w-full object-cover rounded-md border border-gray-300 dark:border-gray-600">
+                                        <button type="button" wire:click="removeNewImage({{ $index }})"
+                                            class="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-75 hover:opacity-100 transition">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20"
+                                                fill="currentColor">
+                                                <path fill-rule="evenodd"
+                                                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                                    clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                @endforeach
+
+                                <!-- Upload Button (Show if total < 3) -->
+                                @if(count($existingImages) + count($newImages) < 3)
+                                    <div
+                                        class="flex items-center justify-center h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-md hover:border-blue-500 dark:hover:border-blue-500 transition cursor-pointer">
+                                        <label for="file-upload"
+                                            class="cursor-pointer flex flex-col items-center justify-center w-full h-full">
+                                            <svg class="h-8 w-8 text-gray-400" stroke="currentColor" fill="none"
+                                                viewBox="0 0 48 48" aria-hidden="true">
+                                                <path
+                                                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                            </svg>
+                                            <span class="mt-2 text-sm text-gray-500">Upload Image</span>
+                                            <input id="file-upload" type="file" wire:model="newImages" class="hidden"
+                                                accept="image/*" multiple>
+                                        </label>
+                                    </div>
+                                @endif
+                            </div>
+                            @error('newImages.*') <span class="text-red-500 text-sm block mt-1">{{ $message }}</span>
+                            @enderror
                         </div>
 
                         <!-- Model Name -->
@@ -207,6 +316,22 @@ class extends Component {
                             Description</label>
                         <textarea wire:model="description" rows="4"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"></textarea>
+                    </div>
+
+                    <!-- Key Features -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Key Features</label>
+                        <textarea wire:model="key_features" rows="4"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            placeholder="Enter key features..."></textarea>
+                    </div>
+
+                    <!-- Application -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Application</label>
+                        <textarea wire:model="application" rows="3"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            placeholder="Enter applications..."></textarea>
                     </div>
 
                     <!-- Attributes Editor -->

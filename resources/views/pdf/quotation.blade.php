@@ -74,7 +74,7 @@
         <div class="invoice-info">
             <h2>QUOTATION</h2>
             <p><strong>Date:</strong> {{ $quotation->created_at->format('Y-m-d') }}</p>
-            <p><strong>Quotation #:</strong> Q-{{ $quotation->id }}</p>
+            <p><strong>Quotation #:</strong> {{ $quotation->custom_quotation_id ?? 'Q-' . $quotation->id }}</p>
             <p><strong>Valid Till:</strong>
                 {{ $quotation->valid_till ? $quotation->valid_till->format('Y-m-d') : 'N/A' }}</p>
         </div>
