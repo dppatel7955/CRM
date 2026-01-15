@@ -9,6 +9,7 @@ new
     class extends Component {
     public $type = '';
     public $value = '';
+    public $color = '';
     public $types = ['Order Status', 'Enquiry Source', 'Unit', 'Tax']; // Predefined or dynamic?
 
     public function save()
@@ -16,15 +17,18 @@ new
         $this->validate([
             'type' => 'required|string',
             'value' => 'required|string',
+            'color' => 'nullable|string',
         ]);
 
         Dropdown::create([
             'type' => $this->type,
             'value' => $this->value,
+            'color' => $this->color,
             'active' => true,
         ]);
 
         $this->value = ''; // Keep type selected
+        $this->color = '';
         $this->dispatch('dropdown-saved');
     }
 
@@ -75,6 +79,11 @@ new
                         <input type="text" wire:model="value" required placeholder="e.g. Sent, Email, kg"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                     </div>
+
+                    <div class="w-24">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Color</label>
+                        <input type="color" wire:model="color" class="mt-1 block w-full h-10 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                    </div>
                     <button type="submit"
                         class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500">Add</button>
                 </form>
@@ -87,7 +96,12 @@ new
                             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                 @foreach($items as $item)
                                     <div class="flex justify-between items-center p-3 border rounded dark:border-gray-700">
-                                        <span>{{ $item->value }}</span>
+                                        <div class="flex items-center gap-2">
+                                            @if($item->color)
+                                                <span class="w-4 h-4 rounded-full" style="background-color: {{ $item->color }};"></span>
+                                            @endif
+                                            <span>{{ $item->value }}</span>
+                                        </div>
                                         <button wire:click="delete({{ $item->id }})"
                                             class="text-red-500 hover:text-red-700 px-2">&times;</button>
                                     </div>

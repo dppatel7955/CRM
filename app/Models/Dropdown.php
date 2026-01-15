@@ -9,6 +9,7 @@ class Dropdown extends Model
     protected $fillable = [
         'type',
         'value',
+        'color',
         'active',
     ];
 }
