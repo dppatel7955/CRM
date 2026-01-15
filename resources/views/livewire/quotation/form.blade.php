@@ -269,21 +269,57 @@ new
                     <!-- Line Items -->
                     <div class="border-t pt-6 dark:border-gray-700">
                         <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Products</h3>
-                        <div class="space-y-4">
+                        <div class="space-y-4" x-data="{ allProducts: @js($products_list) }">
                             @foreach ($items as $index => $item)
                                 <div class="flex gap-4 items-end p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                    <div class="flex-1">
-                                        <label
-                                            class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Product</label>
-                                        <select wire:model="items.{{ $index }}.product_id" {{ $isReadOnly ? 'disabled' : '' }}
-                                            wire:change="updateItemProduct({{ $index }}, $event.target.value)" required
-                                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm disabled:opacity-60">
-                                            <option value="">Select Product</option>
-                                            @foreach($products_list as $prod)
-                                                <option value="{{ $prod->id }}">{{ $prod->product_name }} - ${{ $prod->price }}
-                                                </option>
-                                            @endforeach
-                                        </select>
+                                    <div class="flex-1" x-data="{
+                                            search: '{{ addslashes($items[$index]['product_name'] ?? '') }}',
+                                            open: false,
+                                            get filteredProducts() {
+                                                if (this.search === '') return allProducts; 
+                                                return allProducts.filter(p => p.product_name.toLowerCase().includes(this.search.toLowerCase()));
+                                            },
+                                            selectProduct(prod) {
+                                                this.search = prod.product_name;
+                                                this.open = false;
+                                                $wire.updateItemProduct({{ $index }}, prod.id);
+                                            },
+                                            init() {
+                                                // Sync if livewire updates it from elsewhere
+                                                $watch('$wire.items[{{ $index }}].product_name', value => {
+                                                    if (document.activeElement !== $refs.searchInput) {
+                                                        this.search = value; 
+                                                    }
+                                                });
+                                            }
+                                        }" @click.outside="open = false" class="relative">
+                                        
+                                        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Product</label>
+                                        
+                                        <input type="text" x-ref="searchInput" x-model="search" @focus="open = true" 
+                                            placeholder="Search Product..."
+                                            {{ $isReadOnly ? 'disabled' : '' }}
+                                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm disabled:opacity-60"
+                                            autocomplete="off">
+
+                                        <!-- Dropdown -->
+                                        <div x-show="open && !{{ $isReadOnly ? 'true' : 'false' }}" x-transition
+                                            class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-700 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                                            
+                                            <template x-for="prod in filteredProducts" :key="prod.id">
+                                                <div @click="selectProduct(prod)" 
+                                                    class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-gray-900 dark:text-white border-b dark:border-gray-600 last:border-0">
+                                                    <div class="flex justify-between">
+                                                        <span x-text="prod.product_name" class="font-medium truncate"></span>
+                                                        <span x-text="'$' + prod.price" class="text-xs opacity-75"></span>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                            
+                                            <div x-show="filteredProducts.length === 0" class="py-2 px-3 text-gray-500 dark:text-gray-400 text-sm">
+                                                No products found.
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="w-32">
                                         <label
